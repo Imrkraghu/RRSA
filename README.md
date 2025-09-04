@@ -23,12 +23,14 @@ This project aims to build a mobile application that enables users to:
 - Display confirmation and damage type (optional preview)
 
 **Folder Structure**:
+## 📁 Folder Structure
+
+```bash
 RoadReportingSystem/
 ├── mobile/           # React Native frontend
 ├── backend/          # FastAPI backend
 ├── README.md         # Project overview and setup instructions
 └── docs/             # Diagrams, API contracts, model documentation
-
 
 mobile/
 ├── assets/                   # Images, icons, fonts
@@ -77,7 +79,7 @@ docs/
 
 
 ---
-
+```
 ### 3. Accurate Image Detection Model
 
 **Model Type**: Two-step hybrid ML pipeline
