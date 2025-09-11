@@ -8,6 +8,8 @@ import CameraScreen from '../screens/CameraScreen';
 import UploadScreen from '../screens/UploadScreen';
 import ResultScreen from '../screens/ResultScreen';
 import ImagePreviewScreen from '../screens/ImagePreviewScreen';
+import ComplaintHistoryScreen from '../screens/ComplaintHistory';
+ 
 
 const Stack = createNativeStackNavigator();
 
@@ -20,6 +22,7 @@ export default function AppNavigator() {
         <Stack.Screen name="Preview" component={ImagePreviewScreen} />
         <Stack.Screen name="Upload" component={UploadScreen} />
         <Stack.Screen name="Result" component={ResultScreen} />
+        <Stack.Screen name="Complaint" component={ComplaintHistoryScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );
