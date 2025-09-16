@@ -1,13 +1,11 @@
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as FileSystem from 'expo-file-system';
-import * as Location from 'expo-location';
 import { useRef, useState, useCallback } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View, BackHandler, Alert } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 
 export default function CameraScreen() {
   const [permission, requestPermission] = useCameraPermissions();
-  const [locationPermissionGranted, setLocationPermissionGranted] = useState(false);
   const [lastImagePath, setLastImagePath] = useState(null);
   const cameraRef = useRef(null);
   const navigation = useNavigation();
@@ -36,23 +34,13 @@ export default function CameraScreen() {
     );
   }
 
-  const requestLocationPermission = async () => {
-    const { status } = await Location.requestForegroundPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert('Location permission denied', 'We need location access to tag your complaint.');
-      return false;
-    }
-    setLocationPermissionGranted(true);
-    return true;
-  };
-
   const takePicture = async () => {
     try {
-      const locationOk = await requestLocationPermission();
-      if (!locationOk) return;
-
       const photo = await cameraRef.current?.takePictureAsync();
-      if (!photo?.uri) return;
+      if (!photo?.uri) {
+        Alert.alert('Capture failed', 'No image was captured. Please try again.');
+        return;
+      }
 
       const targetDir = FileSystem.documentDirectory + 'images/';
       const fileName = `photo_${Date.now()}.jpg`;
@@ -73,19 +61,18 @@ export default function CameraScreen() {
       setLastImagePath(destination);
       console.log('📸 Image saved to:', destination);
 
-      const location = await Location.getCurrentPositionAsync({});
-      const latitude = location.coords.latitude.toFixed(5);
-      const longitude = location.coords.longitude.toFixed(5);
-
-      console.log(`📍 Location: ${latitude}, ${longitude}`);
-
-      navigation.navigate('Preview', {
-        imageUri: destination,
-        latitude,
-        longitude,
+      navigation.reset({
+        index: 0,
+        routes: [{
+          name: 'Preview',
+          params: {
+            imageUri: destination,
+          },
+        }],
       });
     } catch (error) {
-      console.error('❌ Error saving image or fetching location:', error);
+      console.error('❌ Error saving image:', error);
+      Alert.alert('Error', 'Something went wrong while capturing the image.');
     }
   };
 

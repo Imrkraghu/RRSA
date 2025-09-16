@@ -1,14 +1,48 @@
-import React, { useCallback, useState } from 'react';
-import { View, Image, Text, TouchableOpacity, StyleSheet, BackHandler, ActivityIndicator, Alert } from 'react-native';
+import React, { useCallback, useEffect, useState } from 'react';
+import {
+  View,
+  Image,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  BackHandler,
+  ActivityIndicator,
+  Alert,
+} from 'react-native';
 import * as FileSystem from 'expo-file-system';
+import * as Location from 'expo-location';
 import axios from 'axios';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 
 export default function ImagePreviewScreen({ route }) {
-  const { imageUri, latitude, longitude } = route.params;
+  const { imageUri } = route.params;
   const navigation = useNavigation();
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
+  const [location, setLocation] = useState(null);
+
+  // 🔄 Fetch location in background
+  useEffect(() => {
+    const fetchLocation = async () => {
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== 'granted') {
+          console.warn('⚠️ Location permission denied');
+          return;
+        }
+
+        const loc = await Location.getCurrentPositionAsync({});
+        const latitude = loc.coords.latitude.toFixed(5);
+        const longitude = loc.coords.longitude.toFixed(5);
+        console.log(`📍 Location fetched: ${latitude}, ${longitude}`);
+        setLocation({ latitude, longitude });
+      } catch (err) {
+        console.warn('⚠️ Failed to fetch location:', err);
+      }
+    };
+
+    fetchLocation();
+  }, []);
 
   const deleteAndGoBack = async () => {
     try {
@@ -17,45 +51,86 @@ export default function ImagePreviewScreen({ route }) {
     } catch (err) {
       console.warn('⚠️ Failed to delete image:', err);
     }
-    navigation.navigate('Camera');
+
+    setResult(null);
+    setLoading(false);
+
+    setTimeout(() => {
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'Camera' }],
+      });
+    }, 300);
   };
 
   const handleConfirm = async () => {
-    setLoading(true);
-    const formData = new FormData();
-    formData.append('file', {
-      uri: imageUri,
-      type: 'image/jpeg',
-      name: 'photo.jpg',
-    });
+  setLoading(true);
 
+  const sendToBackend = async () => {
     try {
-      const res = await axios.post('http://192.168.1.5:8000/detect/', formData, {
+      await new Promise(resolve => setTimeout(resolve, 300)); // wait for file system to settle
+
+      const info = await FileSystem.getInfoAsync(imageUri);
+      if (!info.exists || info.size === 0) {
+        Alert.alert('Invalid image', 'The image file is missing or empty.');
+        console.warn('⚠️ Image file not found or empty:', imageUri);
+        return false;
+      }
+
+      const formData = new FormData();
+      formData.append('file', {
+        uri: imageUri,
+        type: 'image/jpeg',
+        name: 'photo.jpg',
+      });
+
+      console.log('📤 Attempting to send image to backend:', imageUri);
+
+      const res = await axios.post('http://192.168.1.189:8000/detect/', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
+        timeout: 5000,
       });
 
       const { label, confidence } = res.data;
+      console.log('✅ Backend response:', res.data);
+      setResult({ label, confidence });
 
-      // Navigate to ComplaintScreen with full metadata
-      navigation.navigate('Complaint', {
-        imageUri,
-        latitude,
-        longitude,
-        roadName,
-        roadType,
-        department,
-        numPictures,
-        anomaliesDetected: label === 'road anomaly' ? 1 : 0,
-        types: [label],
-        confidence,
-      });
+      if (label === 'road') {
+        navigation.navigate('Complaint', {
+          imageUri,
+          latitude: location?.latitude ?? null,
+          longitude: location?.longitude ?? null,
+          anomaliesDetected: 1,
+          types: [label],
+          confidence,
+        });
+      } else {
+        Alert.alert('Not a road', 'The image does not appear to be a road. Please try again.', [
+          { text: 'Retake', onPress: deleteAndGoBack },
+        ]);
+      }
+
+      return true;
     } catch (error) {
-      Alert.alert('Upload failed', 'Could not connect to backend.');
-      console.error(error);
-    } finally {
-      setLoading(false);
+      console.warn('❌ First attempt failed:', error.message);
+      return false;
     }
   };
+
+  const success = await sendToBackend();
+
+  if (!success) {
+    console.log('🔁 Retrying image upload...');
+    const retrySuccess = await sendToBackend();
+
+    if (!retrySuccess) {
+      Alert.alert('Upload failed', 'Could not connect to backend after retry.');
+    }
+  }
+
+  setLoading(false);
+};
+
 
   const handleRecapture = () => {
     deleteAndGoBack();
@@ -70,7 +145,7 @@ export default function ImagePreviewScreen({ route }) {
 
       const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
       return () => subscription.remove();
-    }, [])
+    }, [imageUri])
   );
 
   return (

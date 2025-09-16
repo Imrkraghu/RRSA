@@ -10,7 +10,7 @@ export default function HomePage({ navigation }) {
         <Text style={styles.buttonText}>Register Complaint</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('Complaint')}>
+      <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('ComplaintHistory')}>
         <Text style={styles.buttonText}>Complaint History</Text>
       </TouchableOpacity>
 
