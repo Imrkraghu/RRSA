@@ -5,7 +5,7 @@ import axios from 'axios';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 
 export default function ImagePreviewScreen({ route }) {
-  const { imageUri } = route.params;
+  const { imageUri, latitude, longitude } = route.params;
   const navigation = useNavigation();
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
@@ -33,7 +33,22 @@ export default function ImagePreviewScreen({ route }) {
       const res = await axios.post('http://192.168.1.5:8000/detect/', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
-      setResult(res.data);
+
+      const { label, confidence } = res.data;
+
+      // Navigate to ComplaintScreen with full metadata
+      navigation.navigate('Complaint', {
+        imageUri,
+        latitude,
+        longitude,
+        roadName,
+        roadType,
+        department,
+        numPictures,
+        anomaliesDetected: label === 'road anomaly' ? 1 : 0,
+        types: [label],
+        confidence,
+      });
     } catch (error) {
       Alert.alert('Upload failed', 'Could not connect to backend.');
       console.error(error);
