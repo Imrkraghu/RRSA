@@ -1,37 +1,20 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, StyleSheet } from 'react-native';
-
-const complaints = [
-  {
-    id: '1',
-    date: '2025-09-10',
-    location: 'Sector 52, Chandigarh',
-    status: 'Resolved',
-    description: 'Large pothole near bus stop',
-  },
-  {
-    id: '2',
-    date: '2025-09-08',
-    location: 'Phase 7, Mohali',
-    status: 'Pending',
-    description: 'Cracked road surface near school gate',
-  },
-  {
-    id: '3',
-    date: '2025-09-05',
-    location: 'Sector 70, Mohali',
-    status: 'In Progress',
-    description: 'Water-logged pothole near traffic light',
-  },
-];
+import { fetchComplaints } from '../services/database';
 
 export default function ComplaintHistoryScreen() {
+  const [complaints, setComplaints] = useState([]);
+
+  useEffect(() => {
+    fetchComplaints(setComplaints); // Load complaints from SQLite
+  }, []);
+
   const renderItem = ({ item }) => (
     <View style={styles.card}>
-      <Text style={styles.date}>{item.date}</Text>
-      <Text style={styles.location}>{item.location}</Text>
-      <Text style={styles.status}>Status: {item.status}</Text>
-      <Text style={styles.description}>{item.description}</Text>
+      <Text style={styles.date}>{new Date(item.timestamp).toLocaleDateString()}</Text>
+      <Text style={styles.location}>Lat: {item.latitude}, Lng: {item.longitude}</Text>
+      <Text style={styles.status}>Status: Local</Text>
+      <Text style={styles.description}>Image Path: {item.imagePath}</Text>
     </View>
   );
 
@@ -40,7 +23,7 @@ export default function ComplaintHistoryScreen() {
       <Text style={styles.title}>Complaint History</Text>
       <FlatList
         data={complaints}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => item.id?.toString()}
         renderItem={renderItem}
         contentContainerStyle={styles.list}
       />

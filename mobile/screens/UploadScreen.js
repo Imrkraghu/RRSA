@@ -1,6 +1,8 @@
 import React from 'react';
-import { View, Text, Image, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { View,Text,Image,StyleSheet,TouchableOpacity,ScrollView,Alert, } from 'react-native';
 import { useRoute } from '@react-navigation/native';
+import { uploadReport } from '../services/api';
+import { getDB, initDB, insertComplaint } from '../services/database';
 
 export default function ComplaintScreen() {
   const route = useRoute();
@@ -15,6 +17,25 @@ export default function ComplaintScreen() {
     anomaliesDetected,
     types,
   } = route.params;
+
+  const handleRegisterComplaint = async () => {
+    const timestamp = new Date().toISOString();
+
+    try {
+      // Send to backend
+      // add more data variables in this 
+      const result = await initDB(imageUri, latitude, longitude);
+
+      // Save locally
+      insertComplaint(imageUri, latitude, longitude, timestamp);
+
+      Alert.alert('Success', 'Complaint registered successfully!');
+      console.log('Server response:', result);
+    } catch (error) {
+      console.error('Error registering complaint:', error);
+      Alert.alert('Error', 'Failed to register complaint.');
+    }
+  };
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
@@ -31,7 +52,7 @@ export default function ComplaintScreen() {
         <InfoRow label="Types" value={Array.isArray(types) ? types.join(', ') : types} />
       </View>
 
-      <TouchableOpacity style={styles.button}>
+      <TouchableOpacity style={styles.button} onPress={handleRegisterComplaint}>
         <Text style={styles.buttonText}>Register Complaint</Text>
       </TouchableOpacity>
     </ScrollView>
