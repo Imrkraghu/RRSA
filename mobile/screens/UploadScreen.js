@@ -1,5 +1,5 @@
-import React from 'react';
-import { View,Text,Image,StyleSheet,TouchableOpacity,ScrollView,Alert, } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, Image, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import { useRoute } from '@react-navigation/native';
 import { uploadReport } from '../services/api';
 import { getDB, initDB, insertComplaint } from '../services/database';
@@ -18,16 +18,36 @@ export default function ComplaintScreen() {
     types,
   } = route.params;
 
+  const [locationName, setLocationName] = useState('Fetching...');
+
+  useEffect(() => {
+    const fetchLocationName = async () => {
+      try {
+        const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`;
+        const response = await fetch(url);
+        const data = await response.json();
+        if (data?.display_name) {
+          setLocationName(data.display_name);
+        } else {
+          setLocationName('Unknown location');
+        }
+      } catch (error) {
+        console.error('Error fetching location name:', error);
+        setLocationName('Error fetching location');
+      }
+    };
+
+    fetchLocationName();
+  }, [latitude, longitude]);
+
   const handleRegisterComplaint = async () => {
     const timestamp = new Date().toISOString();
 
     try {
-      // Send to backend
-      // add more data variables in this 
       const result = await initDB(imageUri, latitude, longitude);
 
-      // Save locally
-      insertComplaint(imageUri, latitude, longitude, timestamp);
+      // Save locally with location name
+      insertComplaint(imageUri, latitude, longitude, timestamp, locationName);
 
       Alert.alert('Success', 'Complaint registered successfully!');
       console.log('Server response:', result);
@@ -42,6 +62,7 @@ export default function ComplaintScreen() {
       <Image source={{ uri: imageUri }} style={styles.image} />
 
       <View style={styles.infoBlock}>
+        <InfoRow label="Location Name" value={locationName} />
         <InfoRow label="Latitude" value={latitude} />
         <InfoRow label="Longitude" value={longitude} />
         <InfoRow label="Road Name" value={roadName} />
