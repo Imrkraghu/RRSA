@@ -3,9 +3,11 @@ import { View, Text, Image, StyleSheet, TouchableOpacity, ScrollView, Alert } fr
 import { useRoute } from '@react-navigation/native';
 import { uploadReport } from '../services/api';
 import { getDB, initDB, insertComplaint } from '../services/database';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 
 export default function ComplaintScreen() {
   const route = useRoute();
+  const navigation = useNavigation();
   const {
     imageUri,
     latitude,
@@ -22,10 +24,21 @@ export default function ComplaintScreen() {
 
   useEffect(() => {
     const fetchLocationName = async () => {
+      if (!latitude || !longitude) {
+        setLocationName('Coordinates missing');
+        return;
+      }
+
       try {
         const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`;
-        const response = await fetch(url);
+        const response = await fetch(url, {
+          headers: {
+            'User-Agent': 'RRSA-MobileApp/1.0 rohit.hanuai@gmail.com',
+          },
+        });
         const data = await response.json();
+        console.log('Location API response:', data);
+
         if (data?.display_name) {
           setLocationName(data.display_name);
         } else {
@@ -36,7 +49,6 @@ export default function ComplaintScreen() {
         setLocationName('Error fetching location');
       }
     };
-
     fetchLocationName();
   }, [latitude, longitude]);
 
@@ -44,15 +56,29 @@ export default function ComplaintScreen() {
     const timestamp = new Date().toISOString();
 
     try {
-      const result = await initDB(imageUri, latitude, longitude);
-
-      // Save locally with location name
+      await initDB();
       insertComplaint(imageUri, latitude, longitude, timestamp, locationName);
 
-      Alert.alert('Success', 'Complaint registered successfully!');
-      console.log('Server response:', result);
+      // Sync to backend
+      const result = await uploadReport({
+        imageUri,
+        latitude,
+        longitude,
+        timestamp,
+        road_name: roadName,
+        road_type: roadType,
+        department,
+        anomalies_detected: anomaliesDetected?.toString(),
+        types: Array.isArray(types) ? types.join(', ') : types,
+        ml_label: '', // placeholder for ML label
+        confidence: 0.0, // placeholder for ML confidence
+      });
+
+      console.log('✅ Synced to backend:', result);
+      // Alert.alert('Success', 'Complaint registered and synced!');
+      navigation.navigate('ComplaintSuccess');
     } catch (error) {
-      console.error('Error registering complaint:', error);
+      console.error('❌ Error registering complaint:', error);
       Alert.alert('Error', 'Failed to register complaint.');
     }
   };
@@ -62,10 +88,9 @@ export default function ComplaintScreen() {
       <Image source={{ uri: imageUri }} style={styles.image} />
 
       <View style={styles.infoBlock}>
-        <InfoRow label="Location Name" value={locationName} />
         <InfoRow label="Latitude" value={latitude} />
         <InfoRow label="Longitude" value={longitude} />
-        <InfoRow label="Road Name" value={roadName} />
+        <InfoRow label="Location Name" value={locationName} />
         <InfoRow label="Road Type" value={roadType} />
         <InfoRow label="Department" value={department} />
         <InfoRow label="No. Pictures" value={numPictures?.toString()} />
