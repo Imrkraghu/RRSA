@@ -55,5 +55,5 @@ for epoch in range(EPOCHS):
 
 # Save
 os.makedirs("models", exist_ok=True)
-torch.save(model.state_dict(), "models/roadnet_v3.pth")
-print("📦 Model saved to models/roadnet_v3.pth")
+torch.save(model.state_dict(), "models/roadnet_v4.pth")
+print("📦 Model saved to models/roadnet_v4.pth")
