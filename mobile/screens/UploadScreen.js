@@ -1,24 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, Image, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
-import { useRoute } from '@react-navigation/native';
+import { useRoute, useNavigation } from '@react-navigation/native';
 import { uploadReport } from '../services/api';
-import { getDB, initDB, insertComplaint } from '../services/database';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
 
 export default function ComplaintScreen() {
   const route = useRoute();
   const navigation = useNavigation();
-  const {
-    imageUri,
-    latitude,
-    longitude,
-    roadName,
-    roadType,
-    department,
-    numPictures,
-    anomaliesDetected,
-    types,
-  } = route.params;
+  const { imageUri, latitude, longitude } = route.params;
 
   const [locationName, setLocationName] = useState('Fetching...');
 
@@ -39,43 +27,26 @@ export default function ComplaintScreen() {
         const data = await response.json();
         console.log('Location API response:', data);
 
-        if (data?.display_name) {
-          setLocationName(data.display_name);
-        } else {
-          setLocationName('Unknown location');
-        }
+        setLocationName(data?.display_name || 'Unknown location');
       } catch (error) {
         console.error('Error fetching location name:', error);
         setLocationName('Error fetching location');
       }
     };
+
     fetchLocationName();
   }, [latitude, longitude]);
 
   const handleRegisterComplaint = async () => {
-    const timestamp = new Date().toISOString();
-
     try {
-      await initDB();
-      insertComplaint(imageUri, latitude, longitude, timestamp, locationName);
-
-      // Sync to backend
       const result = await uploadReport({
         imageUri,
         latitude,
         longitude,
-        timestamp,
-        road_name: roadName,
-        road_type: roadType,
-        department,
-        anomalies_detected: anomaliesDetected?.toString(),
-        types: Array.isArray(types) ? types.join(', ') : types,
-        ml_label: '', // placeholder for ML label
-        confidence: 0.0, // placeholder for ML confidence
+        locationName,
       });
 
       console.log('✅ Synced to backend:', result);
-      // Alert.alert('Success', 'Complaint registered and synced!');
       navigation.navigate('ComplaintSuccess');
     } catch (error) {
       console.error('❌ Error registering complaint:', error);
@@ -91,11 +62,6 @@ export default function ComplaintScreen() {
         <InfoRow label="Latitude" value={latitude} />
         <InfoRow label="Longitude" value={longitude} />
         <InfoRow label="Location Name" value={locationName} />
-        <InfoRow label="Road Type" value={roadType} />
-        <InfoRow label="Department" value={department} />
-        <InfoRow label="No. Pictures" value={numPictures?.toString()} />
-        <InfoRow label="Anomalies Detected" value={anomaliesDetected?.toString()} />
-        <InfoRow label="Types" value={Array.isArray(types) ? types.join(', ') : types} />
       </View>
 
       <TouchableOpacity style={styles.button} onPress={handleRegisterComplaint}>
