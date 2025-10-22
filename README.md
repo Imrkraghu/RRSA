@@ -22,13 +22,14 @@ This project aims to build a mobile application that enables users to:
 - Upload image and location to server via REST API
 - Display confirmation and damage type (optional preview)
 - Optional offline mode with local SQLite storage
+- also need to offer multi user support
 
 ### 🚀 Setup Instructions (Frontend)
 
 #### Prerequisites
 - Node.js ≥ 18.x
 - Expo CLI: `npm install -g expo-cli`
-- Expo Go app (on your mobile device)
+- Expo Go app (on your mobile device for testing after that the new apk version will be given )
 
 #### Installation
 
@@ -105,9 +106,13 @@ backend/
 ```
 ### 3. Accurate Image Detection Model
 
-**Model Type**: Two-step hybrid ML pipeline
+**Old Model Type**: This was the old approach but it was not finalised due to lack of model supprot
 - **Step 1**: MobileNet — verifies if the image contains a road
 - **Step 2**: YOLOv5 or YOLOv8 — detects type of road damage
+- 
+**New Model Type**: This is new approach which is going to be used for the new model its a TFlite version of model compatible with the react native 
+- **Step 1**: Model Confirms that the Road is detected adn if yes then the other class are selected
+- **Step 2**: model do annotation in the image for the class and update the image in the aws server along with the data
 
 **Input**: Road image  
 **Output**:  
@@ -115,8 +120,8 @@ backend/
 - Accepted → Damage type (e.g., pothole, crack, erosion)
 
 **Deployment**:
-- Server-side: TensorFlow or PyTorch
-- Optional mobile-side: TensorFlow Lite or ONNX
+- Ml Model Processing will be done on the end user device itself
+- postgres will be used to store the data in the AWS Sever
 
 ---
 
@@ -126,46 +131,3 @@ backend/
 - OpenStreetMap (Nominatim)
 - Google Maps Roads API
 - Mapbox Geocoding API
-
-**Data Fetched**:
-- Road name
-- Road type (highway, local)
-- Nearby landmarks
-- Administrative region
-
----
-
-### 5. Database Design
-
-**Database**: PostgreSQL with PostGIS extension
-
-**Schema Overview**:
-```sql
-CREATE TABLE users (
-    id SERIAL PRIMARY KEY,
-    username TEXT,
-    email TEXT,
-    password_hash TEXT
-);
-
-CREATE TABLE reports (
-    id SERIAL PRIMARY KEY,
-    image_path TEXT,
-    latitude DOUBLE PRECISION,
-    longitude DOUBLE PRECISION,
-    damage_type TEXT,
-    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE road_info (
-    id SERIAL PRIMARY KEY,
-    report_id INTEGER REFERENCES reports(id),
-    road_name TEXT,
-    road_type TEXT,
-    landmark TEXT
-);
-
-CREATE TABLE damage_types (
-    id SERIAL PRIMARY KEY,
-    type_name TEXT UNIQUE
-);
