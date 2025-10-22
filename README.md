@@ -60,42 +60,44 @@ mobile/
 │   ├── CameraScreen.js
 │   ├── UploadScreen.js
 │   └── ResultScreen.js
+│   └── ImagePreviewScreen.js
+│   └── Homepage.js
+│   └── ComplaintSuccess.js
+│   └── ComplaintHistory.js
 ├── services/                 # API calls (axios wrappers)
 │   └── api.js
-├── utils/                    # Helper functions (e.g., GPS, image compression)
+│   └── database.js           #ensure that the database is present and the tables are created 
+├── utils/
+│   └── config.py                 #access file which will access the shared configuration
+│   └── shared_config.json        #add your backend ip address here
 ├── navigation/               # Stack or tab navigation setup
-│   └── AppNavigator.js
-├── App.js                    # Entry point
+│   └── AppNavigation.js
+├── App.js                    # Entry point for app which also initialize the database
 └── app.config.js             # Expo config
-
+└── index.js                  # passes the app through the expo framework to load it
+└── package-lock.json         #list all the package installled
+└── package.json
 
 backend/
 ├── app/
-│   ├── main.py               # FastAPI entry point
-│   ├── models/               # Pydantic schemas and ORM models
-│   │   ├── report.py
-│   │   ├── road_info.py
-│   │   └── user.py
+│   ├── main.py               # FastAPI entry point it takes the routers, static routes and also have build engine for the database
+│   ├── models/               
+│   │   ├── Complaints.py     # contains the complaint table schema 
 │   ├── routers/              # API endpoints
-│   │   ├── upload.py
-│   │   ├── detect.py
-│   │   ├── road_info.py
-│   │   └── save.py
-│   ├── services/             # Business logic (ML model, geolocation)
-│   │   ├── detector.py
-│   │   └── geo_lookup.py
-│   ├── utils/                # Image handling, validation, etc.
+│   │   ├── Complaints.py     # contains the all routes for the complaint related including the one where data is inserted into the database and also where its fetched
+│   │   ├── detect.py         # contains the temporary of the what the model has detetected
+│   ├── services/             
+│   │   ├── detector.py       # contains the model processing code
+│   │   └── database.py       #contains the database address and credentials which you need to change if you are creating your own
+│   ├── utils/
+│   |   └── Image_handler.js  # Image handling, validation, etc.
 │   └── config.py             # DB config, constants
-├── media/                    # Uploaded images (if stored locally)
+│   ├── uploads/              # Uploaded images come here
+│   ├── train/                # contains the model here which is used to process the data
+|   │   ├── Model/            contains the model
+|   |   └── trainmodel.py     #training script for model but it will train the model in the pytorch but react native will require the tflite version so you need to convert it.    
 ├── requirements.txt          # Python dependencies
 └── README.md                 # Backend setup instructions
-
-
-docs/
-├── architecture_diagram.png
-├── api_contracts.md
-├── model_pipeline.md
-└── database_schema.sql
 
 
 
