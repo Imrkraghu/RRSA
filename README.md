@@ -14,13 +14,34 @@ This project aims to build a mobile application that enables users to:
 
 ### 1. Mobile App (Frontend)
 
-**Platform**: React Native (JavaScript)
+**Platform**: React Native (JavaScript, Expo)
 
 **Features**:
 - Camera access to capture road damage (`expo-camera`)
 - GPS tagging (auto-fetch lat/long using `expo-location`)
 - Upload image and location to server via REST API
 - Display confirmation and damage type (optional preview)
+- Optional offline mode with local SQLite storage
+
+### 🚀 Setup Instructions (Frontend)
+
+#### Prerequisites
+- Node.js ≥ 18.x
+- Expo CLI: `npm install -g expo-cli`
+- Expo Go app (on your mobile device)
+
+#### Installation
+
+```bash for frontend using expo go
+git clone https://github.com/Imrkraghu/RRSA.git
+cd RRSA/mobile
+npm install
+npx expo start
+```
+
+```bash for backend 
+uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+```
 
 **Folder Structure**:
 ## 📁 Folder Structure
