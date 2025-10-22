@@ -1,6 +1,6 @@
 import axios from 'axios';
-
-const BASE_URL = 'http://192.168.1.200:8000';
+import { BASE_URL } from '../utils/config'
+// const BASE_URL = 'http://192.168.1.200:8000';
 
 // Upload a new complaint with image and location
 export const uploadReport = async ({ imageUri, latitude, longitude, location_name }) => {

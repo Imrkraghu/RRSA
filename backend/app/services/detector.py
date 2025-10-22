@@ -5,7 +5,7 @@ from PIL import Image
 
 CLASS_NAMES = {0: "not-road", 1: "road"}
 
-def load_model(model_path="/home/admin1/Documents/rohit/RRSA/backend/app/train/models/roadnet_v3.pth"):
+def load_model(model_path="/home/admin1/Documents/rohit/expo/RoadNetApp/backend/app/train/models/roadnet_v3.pth"):
     model = models.mobilenet_v3_large(weights=None)
     model.classifier[3] = torch.nn.Linear(1280, 2)
     model.load_state_dict(torch.load(model_path, map_location="cpu"))
