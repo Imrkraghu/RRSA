@@ -1,5 +1,5 @@
 import { CameraView, useCameraPermissions } from 'expo-camera';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import { useRef, useState, useCallback } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View, BackHandler, Alert } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';

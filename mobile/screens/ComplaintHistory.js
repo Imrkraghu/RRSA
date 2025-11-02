@@ -8,70 +8,93 @@ import {
   TouchableOpacity,
   Modal,
   Dimensions,
+  ActivityIndicator,
 } from 'react-native';
-import { fetchComplaints } from '../services/database';
+import { getComplaints } from '../services/api';
 
+const BASE_URL = 'http://172.22.45.1:8000'; // Your backend IP
 const screen = Dimensions.get('window');
 
 export default function ComplaintHistoryScreen() {
   const [complaints, setComplaints] = useState([]);
-  const [selectedImage, setSelectedImage] = useState(null);
+  const [selectedImagePath, setSelectedImagePath] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchComplaints((data) => {
-      if (Array.isArray(data)) {
-        setComplaints(data);
-      } else {
-        console.warn('⚠️ Unexpected data format:', data);
+    const fetchComplaints = async () => {
+      try {
+        const data = await getComplaints();
+        if (Array.isArray(data)) {
+          setComplaints(data);
+        } else {
+          console.warn('⚠️ Unexpected data format:', data);
+        }
+      } catch (error) {
+        console.error('❌ Failed to fetch complaints:', error);
+      } finally {
+        setLoading(false);
       }
-    });
+    };
+    fetchComplaints();
   }, []);
 
-  const renderItem = ({ item }) => (
-    <View style={styles.card}>
-      <TouchableOpacity onPress={() => setSelectedImage(item.image_path)}>
-        <Image source={{ uri: item.image_path }} style={styles.imagePreview} />
-      </TouchableOpacity>
+  const renderComplaint = ({ item }) => {
+    const imageUrl = `${BASE_URL}/${item.image_path}`; // Full image path
 
-      <Text style={styles.date}>{new Date(item.timestamp).toLocaleString()}</Text>
-      <Text style={styles.location}>Lat: {item.latitude}, Lng: {item.longitude}</Text>
-      <Text style={styles.status}>Status: In progress</Text>
+    return (
+      <View style={styles.card}>
+        <TouchableOpacity onPress={() => setSelectedImagePath(item.image_path)}>
+          <Image
+            source={{ uri: imageUrl }}
+            style={styles.image}
+            resizeMode="cover"
+            onError={() => console.warn('⚠️ Image failed to load:', imageUrl)}
+          />
+        </TouchableOpacity>
 
-      <Text style={styles.detail}>Road Name: {item.road_name || 'N/A'}</Text>
-      {/* <Text style={styles.detail}>Road Type: {item.road_type || 'N/A'}</Text>
-      <Text style={styles.detail}>Department: {item.department || 'N/A'}</Text>
-      <Text style={styles.detail}>Anomalies: {item.anomalies_detected || 'N/A'}</Text>
-      <Text style={styles.detail}>Types: {item.types || 'N/A'}</Text>
-      <Text style={styles.detail}>ML Label: {item.ml_label || 'N/A'}</Text>
-      <Text style={styles.detail}>Confidence: {item.confidence ?? 'N/A'}</Text> */}
-
-      <Text style={styles.description}>Tap image to view full size</Text>
-    </View>
-  );
+        <View style={styles.info}>
+          <Text style={styles.timestamp}>
+            {/* {item.timestamp ? new Date(item.timestamp).toLocaleString() : 'No timestamp'} */}
+          </Text>
+          <Text style={styles.location}>
+            📍 Lat: {item.latitude}, Lng: {item.longitude}
+          </Text>
+          <Text style={styles.status}>🛠 Status: In progress</Text>
+          {/* <Text style={styles.road}>🛣 Road: {item.road_name || 'N/A'}</Text> */}
+        </View>
+      </View>
+    );
+  };
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Complaint History</Text>
 
-      {complaints.length === 0 ? (
-        <Text style={styles.emptyText}>No complaints found.</Text>
+      {loading ? (
+        <ActivityIndicator size="large" color="#007AFF" style={{ marginTop: 40 }} />
+      ) : complaints.length === 0 ? (
+        <Text style={styles.empty}>No complaints found.</Text>
       ) : (
         <FlatList
           data={complaints}
           keyExtractor={(item) => item.id?.toString()}
-          renderItem={renderItem}
+          renderItem={renderComplaint}
           contentContainerStyle={styles.list}
         />
       )}
 
-      <Modal visible={!!selectedImage} transparent animationType="fade">
+      <Modal visible={!!selectedImagePath} transparent animationType="fade">
         <View style={styles.modalOverlay}>
           <TouchableOpacity
             style={styles.modalContainer}
-            onPress={() => setSelectedImage(null)}
+            onPress={() => setSelectedImagePath(null)}
             activeOpacity={1}
           >
-            <Image source={{ uri: selectedImage }} style={styles.fullImage} resizeMode="contain" />
+            <Image
+              source={{ uri: `${BASE_URL}/${selectedImagePath}` }}
+              style={styles.fullImage}
+              resizeMode="contain"
+            />
           </TouchableOpacity>
         </View>
       </Modal>
@@ -80,37 +103,62 @@ export default function ComplaintHistoryScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff', paddingTop: 40 },
+  container: {
+    flex: 1,
+    backgroundColor: '#fff',
+    paddingTop: 40,
+  },
   title: {
-    fontSize: 24,
+    fontSize: 26,
     fontWeight: 'bold',
     textAlign: 'center',
     marginBottom: 20,
-    color: '#333',
+    color: '#222',
   },
-  emptyText: {
+  empty: {
     fontSize: 16,
     textAlign: 'center',
     color: '#888',
     marginTop: 40,
   },
-  list: { paddingHorizontal: 16 },
+  list: {
+    paddingHorizontal: 16,
+    paddingBottom: 20,
+  },
   card: {
-    backgroundColor: '#f9f9f9',
-    padding: 16,
-    borderRadius: 10,
-    marginBottom: 12,
+    backgroundColor: '#f0f4f7',
+    borderRadius: 12,
+    marginBottom: 16,
+    overflow: 'hidden',
     elevation: 2,
   },
-  date: { fontSize: 14, color: '#666', marginTop: 8 },
-  location: { fontSize: 16, fontWeight: '600', marginTop: 4 },
-  status: { fontSize: 14, color: '#007AFF', marginTop: 4 },
-  detail: { fontSize: 14, color: '#444', marginTop: 4 },
-  description: { fontSize: 14, color: '#444', marginTop: 8 },
-  imagePreview: {
+  image: {
     width: '100%',
     height: 180,
-    borderRadius: 8,
+    backgroundColor: '#ccc',
+  },
+  info: {
+    padding: 12,
+  },
+  timestamp: {
+    fontSize: 14,
+    color: '#555',
+    marginBottom: 4,
+  },
+  location: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#333',
+  },
+  status: {
+    fontSize: 14,
+    color: '#007AFF',
+    marginTop: 4,
+  },
+  road: {
+    fontSize: 14,
+    color: '#444',
+    marginTop: 4,
   },
   modalOverlay: {
     flex: 1,

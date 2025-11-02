@@ -9,7 +9,7 @@ import {
   ActivityIndicator,
   Alert,
 } from 'react-native';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import * as Location from 'expo-location';
 import axios from 'axios';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
@@ -86,7 +86,7 @@ export default function ImagePreviewScreen({ route }) {
 
       console.log('📤 Attempting to send image to backend:', imageUri);
 
-      const res = await axios.post('http://192.168.1.189:8000/detect/', formData, {
+      const res = await axios.post('http://172.22.45.1:8000/detect/', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
         timeout: 5000,
       });
